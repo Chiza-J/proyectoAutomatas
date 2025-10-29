@@ -535,7 +535,7 @@ class AnalizadorApp:
         header = tk.Frame(self.root, bg="#2563eb", height=100)
         header.pack(fill=tk.X)
         
-        title_label = tk.Label(header, text="📄 Analizador Léxico y Sintáctico",
+        title_label = tk.Label(header, text=" Analizador Léxico y Sintáctico",
                               font=("Arial", 24, "bold"), bg="#2563eb", fg="white")
         title_label.pack(pady=10)
         
@@ -547,22 +547,22 @@ class AnalizadorApp:
         toolbar = tk.Frame(self.root, bg="#f3f4f6", height=50)
         toolbar.pack(fill=tk.X, padx=5, pady=5)
         
-        tk.Button(toolbar, text="📁 Cargar Archivo", command=self.cargar_archivo,
+        tk.Button(toolbar, text="Cargar Archivo", command=self.cargar_archivo,
                  bg="#6b7280", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(toolbar, text="✅ Ejemplo Correcto", command=self.ejemplo_correcto,
+        tk.Button(toolbar, text="Ejemplo Correcto", command=self.ejemplo_correcto,
                  bg="#10b981", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(toolbar, text="⚠️ Ejemplo con Errores", command=self.ejemplo_errores,
+        tk.Button(toolbar, text="Ejemplo con Errores", command=self.ejemplo_errores,
                  bg="#f59e0b", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(toolbar, text="💾 Guardar", command=self.guardar_archivo,
+        tk.Button(toolbar, text="Guardar", command=self.guardar_archivo,
                  bg="#3b82f6", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(toolbar, text="📋 LOG", command=self.mostrar_log,
+        tk.Button(toolbar, text="LOG", command=self.mostrar_log,
                  bg="#8b5cf6", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
-        tk.Button(toolbar, text="🗑️ Limpiar", command=self.limpiar,
+        tk.Button(toolbar, text="Limpiar", command=self.limpiar,
                  bg="#ef4444", fg="white", font=("Arial", 10), padx=10, pady=5).pack(side=tk.LEFT, padx=2)
         
         self.status_label = tk.Label(toolbar, text="⚠️ 0L + 0S errores", 
@@ -574,7 +574,7 @@ class AnalizadorApp:
         main_panel.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
         # Editor de código
-        editor_frame = tk.LabelFrame(main_panel, text="⌨️ Editor de Código", 
+        editor_frame = tk.LabelFrame(main_panel, text="Editor de Código", 
                                     font=("Arial", 12, "bold"))
         editor_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5)
         
@@ -586,7 +586,7 @@ class AnalizadorApp:
         self.editor.bind('<KeyRelease>', lambda e: self.analizar_codigo())
         
         # Panel de análisis
-        analisis_frame = tk.LabelFrame(main_panel, text="📊 Análisis",
+        analisis_frame = tk.LabelFrame(main_panel, text="Análisis",
                                       font=("Arial", 12, "bold"))
         analisis_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True, padx=5)
         
@@ -596,7 +596,7 @@ class AnalizadorApp:
         
         # Tab Errores
         errores_frame = tk.Frame(notebook)
-        notebook.add(errores_frame, text="⚠️ Errores")
+        notebook.add(errores_frame, text="Errores")
         
         self.errores_text = scrolledtext.ScrolledText(errores_frame, wrap=tk.WORD,
                                                      font=("Arial", 10),
@@ -605,7 +605,7 @@ class AnalizadorApp:
         
         # Tab Tokens
         tokens_frame = tk.Frame(notebook)
-        notebook.add(tokens_frame, text="🔤 Tokens")
+        notebook.add(tokens_frame, text="Tokens")
         
         self.tokens_text = scrolledtext.ScrolledText(tokens_frame, wrap=tk.WORD,
                                                     font=("Consolas", 9),
@@ -614,7 +614,7 @@ class AnalizadorApp:
         
         # Tab Referencia
         ref_frame = tk.Frame(notebook)
-        notebook.add(ref_frame, text="📖 Referencia")
+        notebook.add(ref_frame, text="Referencia")
         
         self.ref_text = scrolledtext.ScrolledText(ref_frame, wrap=tk.WORD,
                                                  font=("Consolas", 9),
@@ -629,46 +629,44 @@ class AnalizadorApp:
     
     def mostrar_referencia(self):
         referencia = """
-╔══════════════════════════════════════════════════════╗
-║          ALFABETO DEL LENGUAJE FORMAL                ║
-╚══════════════════════════════════════════════════════╝
 
-📌 PALABRAS RESERVADAS (solo estas son válidas):
+          ALFABETO DEL LENGUAJE FORMAL                
+
+ PALABRAS RESERVADAS (solo estas son válidas):
    • si, sino, mientras, para
    • entero, flotante, cadena
    • retornar, funcion
    • verdadero, falso
    • imprimir, leer
 
-⚙️ OPERADORES:
+ OPERADORES:
    • Aritméticos: +, -, *, /, %
    • Relacionales: ==, !=, <, >, <=, >=
    • Lógicos: &&, ||, !
    • Asignación: =
 
-🔧 DELIMITADORES:
+ DELIMITADORES:
    • Paréntesis: ( )
    • Llaves: { }
    • Punto y coma: ;
    • Coma: ,
 
-📝 IDENTIFICADORES:
+ IDENTIFICADORES:
    • Inician con letra o guión bajo
    • Pueden contener letras, números y guión bajo
    • Ejemplos: x, contador, _temp, var123
 
-🔢 LITERALES:
+ LITERALES:
    • Enteros: 25, 100, 0
    • Flotantes: 1.75, 3.14, 0.5
    • Cadenas: "texto", 'texto'
 
-💬 COMENTARIOS:
+ COMENTARIOS:
    • Línea: // comentario
    • Bloque: /* comentario */
 
-═══════════════════════════════════════════════════════
 
-⚠️ REGLAS SEMÁNTICAS:
+ REGLAS SEMÁNTICAS:
    1. Las variables DEBEN declararse antes de usarse
    2. No se pueden redeclarar variables
    3. Las palabras deben estar en el alfabeto
@@ -722,7 +720,7 @@ class AnalizadorApp:
             # Valor del token
             self.tokens_text.insert(tk.END, f"{token.valor}\n", tipo_tag)
         
-        self.token_count_label.config(text=f"📊 Total de tokens: {len(self.tokens)}")
+        self.token_count_label.config(text=f"Total de tokens: {len(self.tokens)}")
     
     def actualizar_errores(self):
         self.errores_text.delete(1.0, tk.END)
@@ -884,7 +882,7 @@ entero test @ 5;
     
     def mostrar_log(self):
         log_window = tk.Toplevel(self.root)
-        log_window.title("📋 LOG de Análisis")
+        log_window.title("LOG de Análisis")
         log_window.geometry("800x600")
         
         log_text = scrolledtext.ScrolledText(log_window, wrap=tk.WORD,
@@ -894,21 +892,21 @@ entero test @ 5;
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         
         log_content = f"""
-╔══════════════════════════════════════════════════════════════╗
-║              LOG DE ANÁLISIS - {timestamp}              ║
-╚══════════════════════════════════════════════════════════════╝
 
-═══════════════════════════════════════════════════════════════
+              LOG DE ANÁLISIS - {timestamp}              
+
+
+
 RESUMEN DEL ANÁLISIS
-═══════════════════════════════════════════════════════════════
+
 Total de tokens encontrados: {len(self.tokens)}
 Errores léxicos: {len(self.errores_lexicos)}
 Errores sintácticos/semánticos: {len(self.errores_sintacticos)}
 Estado: {"✅ CORRECTO" if not (self.errores_lexicos or self.errores_sintacticos) else "❌ CON ERRORES"}
 
-═══════════════════════════════════════════════════════════════
+
 TOKENS IDENTIFICADOS
-═══════════════════════════════════════════════════════════════
+
 """
         
         for i, token in enumerate(self.tokens, 1):
@@ -916,9 +914,9 @@ TOKENS IDENTIFICADOS
         
         if self.errores_lexicos or self.errores_sintacticos:
             log_content += """
-═══════════════════════════════════════════════════════════════
+
 ERRORES DETECTADOS
-═══════════════════════════════════════════════════════════════
+
 """
             todos_errores = self.errores_lexicos + self.errores_sintacticos
             todos_errores.sort(key=lambda e: (e.linea, e.columna))
@@ -928,9 +926,9 @@ ERRORES DETECTADOS
                 log_content += f"{i:2d}. [{tipo:10s}] L{error.linea}:C{error.columna} - {error.mensaje}\n"
         
         log_content += """
-═══════════════════════════════════════════════════════════════
+
 VALIDACIONES REALIZADAS
-═══════════════════════════════════════════════════════════════
+
 ✓ Verificación de alfabeto (solo palabras reservadas válidas)
 ✓ Análisis léxico (tokens, operadores, delimitadores)
 ✓ Análisis sintáctico (estructura del código)
@@ -938,7 +936,7 @@ VALIDACIONES REALIZADAS
 ✓ Balanceo de delimitadores (paréntesis, llaves)
 ✓ Verificación de punto y coma
 
-═══════════════════════════════════════════════════════════════
+
 """
         
         log_text.insert(1.0, log_content)
@@ -962,10 +960,10 @@ VALIDACIONES REALIZADAS
                 except Exception as e:
                     messagebox.showerror("Error", f"No se pudo guardar el LOG:\n{str(e)}")
         
-        tk.Button(btn_frame, text="💾 Guardar LOG", command=guardar_log,
+        tk.Button(btn_frame, text="Guardar LOG", command=guardar_log,
                  bg="#3b82f6", fg="white", font=("Arial", 10), padx=15, pady=5).pack(side=tk.LEFT)
         
-        tk.Button(btn_frame, text="❌ Cerrar", command=log_window.destroy,
+        tk.Button(btn_frame, text="Cerrar", command=log_window.destroy,
                  bg="#6b7280", fg="white", font=("Arial", 10), padx=15, pady=5).pack(side=tk.RIGHT)
 
 # Ejecutar la aplicación
