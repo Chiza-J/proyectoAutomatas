@@ -1,0 +1,271 @@
+======================================================================
+=== ANÁLISIS LÉXICO Y SINTÁCTICO - LOG ===
+======================================================================
+Fecha: 2025-10-28 20:19:30
+Archivo: nuevo_codigo.txt
+Total de tokens: 52
+Total de errores: 0
+======================================================================
+
+TOKENS IDENTIFICADOS:
+----------------------------------------------------------------------
+
+Token 1:
+  Tipo: COMENTARIO
+  Valor: // Escribe tu código aquí...
+  Línea: 1, Columna: 1
+
+Token 2:
+  Tipo: COMENTARIO
+  Valor: // Ejemplo:
+  Línea: 2, Columna: 1
+
+Token 3:
+  Tipo: PALABRA_RESERVADA
+  Valor: entero
+  Línea: 3, Columna: 1
+
+Token 4:
+  Tipo: IDENTIFICADOR
+  Valor: numero
+  Línea: 3, Columna: 8
+
+Token 5:
+  Tipo: OPERADOR
+  Valor: =
+  Línea: 3, Columna: 15
+
+Token 6:
+  Tipo: LITERAL_ENTERO
+  Valor: 42
+  Línea: 3, Columna: 17
+
+Token 7:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 3, Columna: 19
+
+Token 8:
+  Tipo: PALABRA_RESERVADA
+  Valor: flotante
+  Línea: 4, Columna: 1
+
+Token 9:
+  Tipo: IDENTIFICADOR
+  Valor: pi
+  Línea: 4, Columna: 10
+
+Token 10:
+  Tipo: OPERADOR
+  Valor: =
+  Línea: 4, Columna: 13
+
+Token 11:
+  Tipo: LITERAL_FLOTANTE
+  Valor: 3.14
+  Línea: 4, Columna: 15
+
+Token 12:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 4, Columna: 19
+
+Token 13:
+  Tipo: PALABRA_RESERVADA
+  Valor: cadena
+  Línea: 5, Columna: 1
+
+Token 14:
+  Tipo: IDENTIFICADOR
+  Valor: mensaje
+  Línea: 5, Columna: 8
+
+Token 15:
+  Tipo: OPERADOR
+  Valor: =
+  Línea: 5, Columna: 16
+
+Token 16:
+  Tipo: LITERAL_CADENA
+  Valor: "Hola Mundo"
+  Línea: 5, Columna: 18
+
+Token 17:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 5, Columna: 30
+
+Token 18:
+  Tipo: PALABRA_RESERVADA
+  Valor: si
+  Línea: 7, Columna: 1
+
+Token 19:
+  Tipo: DELIMITADOR
+  Valor: (
+  Línea: 7, Columna: 4
+
+Token 20:
+  Tipo: IDENTIFICADOR
+  Valor: numero
+  Línea: 7, Columna: 5
+
+Token 21:
+  Tipo: OPERADOR
+  Valor: >
+  Línea: 7, Columna: 12
+
+Token 22:
+  Tipo: LITERAL_ENTERO
+  Valor: 10
+  Línea: 7, Columna: 14
+
+Token 23:
+  Tipo: DELIMITADOR
+  Valor: )
+  Línea: 7, Columna: 16
+
+Token 24:
+  Tipo: DELIMITADOR
+  Valor: {
+  Línea: 7, Columna: 18
+
+Token 25:
+  Tipo: PALABRA_RESERVADA
+  Valor: imprimir
+  Línea: 8, Columna: 5
+
+Token 26:
+  Tipo: DELIMITADOR
+  Valor: (
+  Línea: 8, Columna: 13
+
+Token 27:
+  Tipo: LITERAL_CADENA
+  Valor: "Mayor que 10"
+  Línea: 8, Columna: 14
+
+Token 28:
+  Tipo: DELIMITADOR
+  Valor: )
+  Línea: 8, Columna: 28
+
+Token 29:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 8, Columna: 29
+
+Token 30:
+  Tipo: DELIMITADOR
+  Valor: }
+  Línea: 9, Columna: 1
+
+Token 31:
+  Tipo: PALABRA_RESERVADA
+  Valor: sino
+  Línea: 9, Columna: 3
+
+Token 32:
+  Tipo: DELIMITADOR
+  Valor: {
+  Línea: 9, Columna: 8
+
+Token 33:
+  Tipo: PALABRA_RESERVADA
+  Valor: imprimir
+  Línea: 10, Columna: 5
+
+Token 34:
+  Tipo: DELIMITADOR
+  Valor: (
+  Línea: 10, Columna: 13
+
+Token 35:
+  Tipo: LITERAL_CADENA
+  Valor: "Menor o igual"
+  Línea: 10, Columna: 14
+
+Token 36:
+  Tipo: DELIMITADOR
+  Valor: )
+  Línea: 10, Columna: 29
+
+Token 37:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 10, Columna: 30
+
+Token 38:
+  Tipo: DELIMITADOR
+  Valor: }
+  Línea: 11, Columna: 1
+
+Token 39:
+  Tipo: PALABRA_RESERVADA
+  Valor: mientras
+  Línea: 13, Columna: 1
+
+Token 40:
+  Tipo: DELIMITADOR
+  Valor: (
+  Línea: 13, Columna: 10
+
+Token 41:
+  Tipo: IDENTIFICADOR
+  Valor: numero
+  Línea: 13, Columna: 11
+
+Token 42:
+  Tipo: OPERADOR
+  Valor: >
+  Línea: 13, Columna: 18
+
+Token 43:
+  Tipo: LITERAL_ENTERO
+  Valor: 0
+  Línea: 13, Columna: 20
+
+Token 44:
+  Tipo: DELIMITADOR
+  Valor: )
+  Línea: 13, Columna: 21
+
+Token 45:
+  Tipo: DELIMITADOR
+  Valor: {
+  Línea: 13, Columna: 23
+
+Token 46:
+  Tipo: IDENTIFICADOR
+  Valor: numero
+  Línea: 14, Columna: 5
+
+Token 47:
+  Tipo: OPERADOR
+  Valor: =
+  Línea: 14, Columna: 12
+
+Token 48:
+  Tipo: IDENTIFICADOR
+  Valor: numero
+  Línea: 14, Columna: 14
+
+Token 49:
+  Tipo: OPERADOR
+  Valor: -
+  Línea: 14, Columna: 21
+
+Token 50:
+  Tipo: LITERAL_ENTERO
+  Valor: 1
+  Línea: 14, Columna: 23
+
+Token 51:
+  Tipo: DELIMITADOR
+  Valor: ;
+  Línea: 14, Columna: 24
+
+Token 52:
+  Tipo: DELIMITADOR
+  Valor: }
+  Línea: 15, Columna: 1

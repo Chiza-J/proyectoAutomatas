@@ -1,0 +1,15 @@
+// Escribe tu código aquí...
+// Ejemplo:
+entero numero = 42
+flotante pi = 3.14;
+cadena mensaje = "Hola Mundo";
+
+si (numero > 10) {
+    imprimir("Mayor que 10");
+} sino {
+    imprimir("Menor o igual");
+}
+
+mientras (numero > 0) {
+    numero = numero - 1;
+}
