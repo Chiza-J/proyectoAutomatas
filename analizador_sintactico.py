@@ -152,28 +152,36 @@ class AnalizadorLexico:
                 col_inicio = columna
                 numero = ''
                 puntos = 0
+                tiene_coma = False
                 
-                while i < len(codigo) and (codigo[i].isdigit() or codigo[i] == '.'):
+                while i < len(codigo) and (codigo[i].isdigit() or codigo[i] in ['.',',']):
                     if codigo[i] == '.':
                         puntos += 1
+                    elif codigo[i] == ',':
+                        tiene_coma = True
                     numero += codigo[i]
                     i += 1
                     columna += 1
-                
+                #error si tiene coma
+                if tiene_coma:
+                    errores.append(Error(col_inicio, f"numero mal formado'{numero}' (no se permiten comas dentro de un numero)",'lexico'))
+                    continue
+                # error si tiene más de un punto decimal
+                if puntos > 1:
+                    errores.append(Error(linea, col_inicio, f"número mal formado '{numero}'(demasiados puntos decimales)", 'lexico'))
+                    continue
                 # Verificar si continúa con letras (ERROR)
-                if i < len(codigo) and (codigo[i].isalpha() or codigo[i] == '_'):
-                    invalido = numero
+                if i < len(codigo) and codigo[i].isalpha() or codigo[i] == '_':
+                    invalido = numero  
+
                     while i < len(codigo) and (codigo[i].isalnum() or codigo[i] == '_'):
-                        invalido += codigo[i]
+                        numero += codigo[i]
                         i += 1
                         columna += 1
                     errores.append(Error(linea, col_inicio,
-                                       f"token inválido '{invalido}' - no pertenece al alfabeto", 'lexico'))
+                                       f"token invalido '{invalido}' - no pertenece al alfabeto", 'lexico'))
                     continue
-                
-                if puntos > 1:
-                    errores.append(Error(linea, col_inicio,
-                                       f"número mal formado '{numero}'", 'lexico'))
+
                 elif puntos == 1:
                     tokens.append(Token('LITERAL_FLOTANTE', numero, linea, col_inicio))
                 else:
@@ -240,7 +248,47 @@ class AnalizadorLexico:
             i += 1
             columna += 1
         
+        for idx, token in enumerate(tokens):
+            if token.tipo == 'PALABRA_RESERVADA' and token.valor == 'mientras':
+                if idx + 1 >= len(tokens) or tokens[idx + 1].valor != '(':
+                    errores.append(Error(token.linea, token.columna,
+                                       "estructura 'mientras' debe abrir con '(' después de 'mientras'", 'sintactico'))
+                    continue
+
+                condicion = ""
+                j = idx + 2
+                parentesis_cerrado = False
+                while j < len(tokens):
+                    if tokens[j].valor == ')':
+                        parentesis_cerrado = True
+                        break
+                    condicion += tokens[j].valor
+                    j += 1
+
+                if not parentesis_cerrado:
+                    errores.append(Error(token.linea, token.columna,
+                                 "estructura 'mientras' sin paréntesis de cierre ')'", 'sintactico'))
+                    continue
+
+        # Validar contenido dentro de paréntesis (no vacío ni repetición de operadores)
+                if condicion.strip() == "":
+                    errores.append(Error(token.linea, token.columna,
+                                 "condición vacía en 'mientras'", 'sintactico'))
+                elif '==' not in condicion and '<' not in condicion and '>' not in condicion and '<=' not in condicion and '>=' not in condicion and '!=' not in condicion:
+                    errores.append(Error(token.linea, token.columna,
+                                 f"condición inválida en 'mientras' → falta operador lógico o relacional", 'sintactico'))
+                elif '====' in condicion or '<<' in condicion or '>>' in condicion or '=<=' in condicion:
+                    errores.append(Error(token.linea, token.columna,
+                                 f"operador repetido o mal formado en 'mientras' → '{condicion}'", 'sintactico'))
+
+        # Verificar que después del paréntesis venga una llave '{'
+                if j + 1 >= len(tokens) or tokens[j + 1].valor != '{':
+                    errores.append(Error(token.linea, token.columna,
+                                 "estructura 'mientras' debe abrir con llave '{' después de ')'", 'sintactico'))
+
         return tokens, errores
+    
+
 
 class AnalizadorSintactico:
     def __init__(self):
