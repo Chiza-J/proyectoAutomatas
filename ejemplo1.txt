@@ -1,0 +1,24 @@
+// Programa de ejemplo CORRECTO en español
+entero edad = 25;
+flotante altura = 1.75;
+cadena nombre = "Juan Pérez";
+
+/* Este es un comentario
+   de bloque multilínea
+   correcto */
+entero resultado = 0;
+resultado = edad + nombre;
+// Estructura condicional
+si (edad >= 18) {
+    imprimir("Mayor de edad");
+} sino {
+    imprimir("Menor de edad");
+}
+
+// Bucle mientras
+entero contador = 0;
+mientras (contador < 5) {
+    imprimir("Contador:");
+    contador = contador + 1;
+}
+

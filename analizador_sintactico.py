@@ -38,9 +38,104 @@ class AnalizadorLexico:
             '+', '-', '*', '/', '%', '<', '>', '!', '='
         }
         
+        # set de caracteres que pueden formar operadores
+        self.operador_chars = set('=!<>+-*/%&|')
+
         # ALFABETO: Delimitadores
         self.delimitadores = {'(', ')', '{', '}', ';', ','}
         
+        # Para validaciones de tipo léxicas inmediatas
+        self.tipos_datos = {'entero', 'flotante', 'cadena'}
+        # contexto_tipos se llenará tras tokenizar (declaraciones detectadas)
+        self.contexto_tipos = {}  # nombre -> (tipo, linea)
+        
+    def _es_operador_valido(self, seq):
+        """Verifica si la secuencia exacta seq es un operador permitido."""
+        return seq in self.operadores
+    
+    def _inferir_tipo_literal_token(self, token):
+        """Devuelve 'entero','flotante','cadena' o None para un token literal."""
+        if token.tipo == 'LITERAL_ENTERO':
+            return 'entero'
+        if token.tipo == 'LITERAL_FLOTANTE':
+            return 'flotante'
+        if token.tipo == 'LITERAL_CADENA':
+            return 'cadena'
+        if token.tipo == 'PALABRA_RESERVADA' and token.valor in ('verdadero','falso'):
+            return 'entero'
+        return None
+
+    def _validar_expresion_tipos(self, tokens_segmento, errores):
+        """
+        Inferir tipos de los operandos en la expresión y validar mezclas inválidas.
+        - Retorna tipo resultante ('entero','flotante','cadena') o None si no se pudo inferir.
+        - Añade errores a la lista 'errores' cuando detecta mezclas inválidas.
+        """
+        operand_types = []
+        last_was_operator = True  # iniciar True para detectar operadores dobles al inicio
+        i = 0
+        while i < len(tokens_segmento):
+            tk = tokens_segmento[i]
+            if tk.tipo == 'DELIMITADOR' and tk.valor in ('(',')',','):
+                last_was_operator = False
+                i += 1
+                continue
+
+            if tk.tipo == 'OPERADOR':
+                if last_was_operator and tk.valor != '!':  # '!' puede ser unario
+                    errores.append(Error(tk.linea, tk.columna,
+                                         f"secuencia inválida de operadores cerca de '{tk.valor}'", 'lexico'))
+                last_was_operator = True
+                i += 1
+                continue
+
+            if tk.tipo in ('LITERAL_ENTERO','LITERAL_FLOTANTE','LITERAL_CADENA'):
+                tp = self._inferir_tipo_literal_token(tk)
+                if tp:
+                    operand_types.append((tp, tk))
+                last_was_operator = False
+                i += 1
+                continue
+
+            if tk.tipo == 'PALABRA_RESERVADA' and tk.valor in ('verdadero','falso'):
+                operand_types.append(('entero', tk))
+                last_was_operator = False
+                i += 1
+                continue
+
+            if tk.tipo == 'IDENTIFICADOR':
+                if tk.valor in self.contexto_tipos:
+                    declared_type = self.contexto_tipos[tk.valor][0]
+                    operand_types.append((declared_type, tk))
+                else:
+                    errores.append(Error(tk.linea, tk.columna,
+                                         f"uso de identificador '{tk.valor}' sin declaración previa (para validar tipos)", 'lexico'))
+                last_was_operator = False
+                i += 1
+                continue
+
+            last_was_operator = False
+            i += 1
+
+        tipos_presentes = set([t for t, _ in operand_types])
+        if not operand_types:
+            return None
+
+        # Cadena mezclada con numérico -> error
+        if 'cadena' in tipos_presentes and len(tipos_presentes) > 1:
+            for t, tk in operand_types:
+                if t == 'cadena':
+                    errores.append(Error(tk.linea, tk.columna, "mezcla de tipo 'cadena' con tipo numérico en la misma expresión", 'lexico'))
+                    break
+            return None
+
+        if tipos_presentes == {'entero'}:
+            return 'entero'
+        if tipos_presentes <= {'entero','flotante'}:
+            return 'flotante' if 'flotante' in tipos_presentes else 'entero'
+
+        return None
+
     def analizar(self, codigo):
         tokens = []
         errores = []
@@ -48,6 +143,10 @@ class AnalizadorLexico:
         linea = 1
         columna = 1
         
+        # reset contexto_tipos para cada análisis
+        self.contexto_tipos = {}
+
+        # --- TOKENIZACIÓN ---
         while i < len(codigo):
             char = codigo[i]
             
@@ -164,16 +263,15 @@ class AnalizadorLexico:
                     columna += 1
                 #error si tiene coma
                 if tiene_coma:
-                    errores.append(Error(col_inicio, f"numero mal formado'{numero}' (no se permiten comas dentro de un numero)",'lexico'))
+                    errores.append(Error(linea, col_inicio, f"numero mal formado '{numero}' (no se permiten comas dentro de un numero)", 'lexico'))
                     continue
                 # error si tiene más de un punto decimal
                 if puntos > 1:
-                    errores.append(Error(linea, col_inicio, f"número mal formado '{numero}'(demasiados puntos decimales)", 'lexico'))
+                    errores.append(Error(linea, col_inicio, f"número mal formado '{numero}' (demasiados puntos decimales)", 'lexico'))
                     continue
                 # Verificar si continúa con letras (ERROR)
-                if i < len(codigo) and codigo[i].isalpha() or codigo[i] == '_':
+                if i < len(codigo) and (codigo[i].isalpha() or codigo[i] == '_'):
                     invalido = numero  
-
                     while i < len(codigo) and (codigo[i].isalnum() or codigo[i] == '_'):
                         numero += codigo[i]
                         i += 1
@@ -188,34 +286,44 @@ class AnalizadorLexico:
                     tokens.append(Token('LITERAL_ENTERO', numero, linea, col_inicio))
                 continue
             
-            # Operadores de dos caracteres
-            if i + 1 < len(codigo):
-                op_doble = codigo[i:i+2]
-                if op_doble in self.operadores:
-                    tokens.append(Token('OPERADOR', op_doble, linea, columna))
-                    i += 2
-                    columna += 2
-                    continue
-            
-            # Operadores de un carácter
-            if char in self.operadores:
+            # Operadores: capturar secuencia completa de caracteres operadores (ej: '>>==', '===', '+', '&&')
+            if char in self.operador_chars:
                 col_inicio = columna
-                j = i 
-                secuencia = ""
-                while j < len(codigo) and codigo[j] in self.operadores:
-                    secuencia += codigo[j]
+                seq = ''
+                j = i
+                while j < len(codigo) and codigo[j] in self.operador_chars:
+                    seq += codigo[j]
                     j += 1
-                
-                if len(secuencia) == 1:
-                    tokens.append(Token('OPERADOR', secuencia, linea, col_inicio))
-                elif len(secuencia) == 2 and secuencia in self.operadores:
-                    tokens.append(Token('OPERADOR', secuencia, linea, col_inicio))
-                else:
+                # Intentar descomponer seq en operadores válidos; solo aceptamos si resulta en EXACTAMENTE 1 operador válido
+                k = 0
+                operadores_encontrados = []
+                fallo = False
+                while k < len(seq):
+                    matched = None
+                    # probar 2-char match
+                    if k+2 <= len(seq) and seq[k:k+2] in self.operadores:
+                        matched = seq[k:k+2]
+                        k += 2
+                    elif seq[k] in {o for o in self.operadores if len(o) == 1}:
+                        matched = seq[k]
+                        k += 1
+                    else:
+                        fallo = True
+                        break
+                    operadores_encontrados.append(matched)
+
+                if fallo or len(operadores_encontrados) != 1 or not self._es_operador_valido(operadores_encontrados[0]):
                     errores.append(Error(linea, col_inicio,
-                                       f"secuencia de operadores inválida '{secuencia}'", 'lexico'))
-                i = j
-                columna += len(secuencia)
-                continue
+                                         f"secuencia de operadores inválida o no permitida '{seq}'", 'lexico'))
+                    i = j
+                    columna += len(seq)
+                    continue
+                else:
+                    op = operadores_encontrados[0]
+                    tokens.append(Token('OPERADOR', op, linea, col_inicio))
+                    i = j
+                    columna += len(op)
+                    continue
 
             # Delimitadores
             if char in self.delimitadores:
@@ -234,11 +342,9 @@ class AnalizadorLexico:
                     i += 1
                     columna += 1
                 
-                # VALIDACIÓN ESTRICTA: Solo palabras en el alfabeto
                 if palabra in self.palabras_reservadas:
                     tokens.append(Token('PALABRA_RESERVADA', palabra, linea, col_inicio))
                 else:
-                    # Identificador de usuario (variable/función definida por usuario)
                     tokens.append(Token('IDENTIFICADOR', palabra, linea, col_inicio))
                 continue
             
@@ -248,21 +354,72 @@ class AnalizadorLexico:
             i += 1
             columna += 1
         
+        # --- FIN TOKENIZACIÓN ---
+
+        # 1) PRIMERA PASADA: Construir contexto de tipos (declaraciones) y validar declaraciones con inicialización
+        tlen = len(tokens)
+        idx = 0
+        while idx < tlen:
+            tk = tokens[idx]
+            if tk.tipo == 'PALABRA_RESERVADA' and tk.valor in self.tipos_datos:
+                tipo_decl = tk.valor
+                if idx + 1 < tlen and tokens[idx+1].tipo == 'IDENTIFICADOR':
+                    nombre = tokens[idx+1].valor
+                    if nombre in self.contexto_tipos:
+                        errores.append(Error(tokens[idx+1].linea, tokens[idx+1].columna,
+                                             f"variable '{nombre}' ya declarada en línea {self.contexto_tipos[nombre][1]}", 'lexico'))
+                    else:
+                        # Declaración OBLIGATORIA CON = según tus reglas
+                        j = idx + 2
+                        if j < tlen and tokens[j].tipo == 'OPERADOR' and tokens[j].valor == '=':
+                            # recoger expresión hasta ';'
+                            expr = []
+                            k = j + 1
+                            while k < tlen and tokens[k].valor != ';' and tokens[k].valor != '{' and tokens[k].valor != '}':
+                                expr.append(tokens[k])
+                                k += 1
+                            inferred = self._validar_expresion_tipos(expr, errores)
+                            # si inferimos tipo, comparar con tipo_decl
+                            if inferred:
+                                if tipo_decl == 'entero' and inferred == 'flotante':
+                                    errores.append(Error(tk.linea, tk.columna,
+                                                         f"declaración de tipo 'entero' con expresión 'flotante' -> mezcla de tipos no permitida", 'lexico'))
+                                elif tipo_decl == 'cadena' and inferred in ('entero','flotante'):
+                                    errores.append(Error(tk.linea, tk.columna,
+                                                         f"declaración de tipo 'cadena' con expresión numérica -> mezcla de tipos no permitida", 'lexico'))
+                            # registrar declaración (correcta o con error semántico)
+                            self.contexto_tipos[nombre] = (tipo_decl, tokens[idx+1].linea)
+                            idx = k
+                            continue
+                        else:
+                            errores.append(Error(tokens[idx+1].linea, tokens[idx+1].columna,
+                                               f"declaración de '{tipo_decl}' debe incluir asignación (ej: {tipo_decl} var = ...;)", 'lexico'))
+                            # aún así registramos para evitar cascada de errores en validaciones posteriores
+                            self.contexto_tipos[nombre] = (tipo_decl, tokens[idx+1].linea)
+                            idx += 2
+                            continue
+                else:
+                    errores.append(Error(tk.linea, tk.columna,
+                                         f"se esperaba identificador después de '{tk.valor}'", 'lexico'))
+            idx += 1
+
+        # 2) Validaciones estructurales y de expresiones (ahora que contexto_tipos está poblado)
         for idx, token in enumerate(tokens):
+            # 'mientras'
             if token.tipo == 'PALABRA_RESERVADA' and token.valor == 'mientras':
                 if idx + 1 >= len(tokens) or tokens[idx + 1].valor != '(':
                     errores.append(Error(token.linea, token.columna,
                                        "estructura 'mientras' debe abrir con '(' después de 'mientras'", 'sintactico'))
                     continue
 
-                condicion = ""
+                condicion_tokens = []
                 j = idx + 2
                 parentesis_cerrado = False
                 while j < len(tokens):
                     if tokens[j].valor == ')':
                         parentesis_cerrado = True
                         break
-                    condicion += tokens[j].valor
+                    condicion_tokens.append(tokens[j])
                     j += 1
 
                 if not parentesis_cerrado:
@@ -270,21 +427,145 @@ class AnalizadorLexico:
                                  "estructura 'mientras' sin paréntesis de cierre ')'", 'sintactico'))
                     continue
 
-        # Validar contenido dentro de paréntesis (no vacío ni repetición de operadores)
-                if condicion.strip() == "":
+                if len(condicion_tokens) == 0:
                     errores.append(Error(token.linea, token.columna,
                                  "condición vacía en 'mientras'", 'sintactico'))
-                elif '==' not in condicion and '<' not in condicion and '>' not in condicion and '<=' not in condicion and '>=' not in condicion and '!=' not in condicion:
-                    errores.append(Error(token.linea, token.columna,
-                                 f"condición inválida en 'mientras' → falta operador lógico o relacional", 'sintactico'))
-                elif '====' in condicion or '<<' in condicion or '>>' in condicion or '=<=' in condicion:
-                    errores.append(Error(token.linea, token.columna,
-                                 f"operador repetido o mal formado en 'mientras' → '{condicion}'", 'sintactico'))
+                else:
+                    cond_str = ''.join([t.valor for t in condicion_tokens])
+                    if '==' not in cond_str and '<' not in cond_str and '>' not in cond_str and '<=' not in cond_str and '>=' not in cond_str and '!=' not in cond_str and '&&' not in cond_str and '||' not in cond_str:
+                        errores.append(Error(token.linea, token.columna,
+                                     f"condición inválida en 'mientras' → falta operador lógico o relacional", 'sintactico'))
+                    if '====' in cond_str or '<<' in cond_str or '>>' in cond_str or '=<=' in cond_str:
+                        errores.append(Error(token.linea, token.columna,
+                                     f"operador repetido o mal formado en 'mientras' → '{cond_str}'", 'sintactico'))
 
-        # Verificar que después del paréntesis venga una llave '{'
                 if j + 1 >= len(tokens) or tokens[j + 1].valor != '{':
                     errores.append(Error(token.linea, token.columna,
                                  "estructura 'mientras' debe abrir con llave '{' después de ')'", 'sintactico'))
+
+            # 'si'
+            if token.tipo == 'PALABRA_RESERVADA' and token.valor == 'si':
+                if idx + 1 >= len(tokens) or tokens[idx + 1].valor != '(':
+                    errores.append(Error(token.linea, token.columna,
+                                       "se esperaba '(' después de 'si'", 'sintactico'))
+                else:
+                    condicion_tokens = []
+                    j = idx + 2
+                    nivel = 0
+                    parentesis_cerrado = False
+                    while j < len(tokens):
+                        if tokens[j].valor == '(':
+                            nivel += 1
+                        elif tokens[j].valor == ')':
+                            if nivel == 0:
+                                parentesis_cerrado = True
+                                break
+                            else:
+                                nivel -= 1
+                        condicion_tokens.append(tokens[j])
+                        j += 1
+
+                    if not parentesis_cerrado:
+                        errores.append(Error(token.linea, token.columna,
+                                             "estructura 'si' sin paréntesis de cierre ')'", 'sintactico'))
+                    else:
+                        if len(condicion_tokens) == 0:
+                            errores.append(Error(token.linea, token.columna,
+                                                 "condición vacía en 'si'", 'sintactico'))
+                        else:
+                            cond_str = ''.join([t.valor for t in condicion_tokens])
+                            if '==' not in cond_str and '<' not in cond_str and '>' not in cond_str and '<=' not in cond_str and '>=' not in cond_str and '!=' not in cond_str and '&&' not in cond_str and '||' not in cond_str:
+                                errores.append(Error(token.linea, token.columna,
+                                                     f"condición inválida en 'si' → falta operador lógico o relacional", 'sintactico'))
+                            # Validar mezcla de tipos dentro de la condición
+                            self._validar_expresion_tipos(condicion_tokens, errores)
+
+                    if j + 1 >= len(tokens) or tokens[j + 1].valor != '{':
+                        errores.append(Error(tokens[j].linea if j < len(tokens) else token.linea, 
+                                             tokens[j].columna if j < len(tokens) else token.columna,
+                                               f"se esperaba '{{' después de ')'", 'sintactico'))
+
+            # 'sino'
+            if token.tipo == 'PALABRA_RESERVADA' and token.valor == 'sino':
+                if idx + 1 >= len(tokens) or tokens[idx + 1].valor != '{':
+                    errores.append(Error(token.linea, token.columna,
+                                         "estructura 'sino' no debe llevar paréntesis; debe seguir '{'", 'sintactico'))
+                found_si_previo = False
+                for k in range(0, idx):
+                    if tokens[k].tipo == 'PALABRA_RESERVADA' and tokens[k].valor == 'si':
+                        found_si_previo = True
+                        break
+                if not found_si_previo:
+                    errores.append(Error(token.linea, token.columna,
+                                         "'sino' debe ir después de un 'si' previamente declarado", 'sintactico'))
+
+            # 'para'
+            if token.tipo == 'PALABRA_RESERVADA' and token.valor == 'para':
+                if idx + 1 >= len(tokens) or tokens[idx + 1].valor != '(':
+                    errores.append(Error(token.linea, token.columna,
+                                       "se esperaba '(' después de 'para'", 'sintactico'))
+                else:
+                    j = idx + 2
+                    nivel = 0
+                    pos_cierre = -1
+                    while j < len(tokens):
+                        if tokens[j].valor == '(':
+                            nivel += 1
+                        elif tokens[j].valor == ')':
+                            if nivel == 0:
+                                pos_cierre = j
+                                break
+                            else:
+                                nivel -= 1
+                        j += 1
+                    if pos_cierre == -1:
+                        errores.append(Error(token.linea, token.columna,
+                                             "estructura 'para' sin paréntesis de cierre ')'", 'sintactico'))
+                    else:
+                        count_puntos = sum(1 for t in tokens[idx+2:pos_cierre] if t.valor == ';')
+                        if count_puntos != 2:
+                            errores.append(Error(tokens[idx+2].linea if idx+2 < len(tokens) else token.linea,
+                                                 tokens[idx+2].columna if idx+2 < len(tokens) else token.columna,
+                                                 "estructura 'para' debe tener dos ';' en la cabecera", 'sintactico'))
+                        if pos_cierre + 1 >= len(tokens) or tokens[pos_cierre + 1].valor != '{':
+                            errores.append(Error(tokens[pos_cierre].linea, tokens[pos_cierre].columna,
+                                                 "se esperaba '{' después de ')' en 'para'", 'sintactico'))
+
+        # 3) Revisar asignaciones posteriores y validar mezclas en expresiones complejas (B)
+        i = 0
+        while i < len(tokens):
+            tk = tokens[i]
+            if tk.tipo == 'IDENTIFICADOR' and i+1 < len(tokens) and tokens[i+1].tipo == 'OPERADOR' and tokens[i+1].valor == '=':
+                var_name = tk.valor
+                if var_name not in self.contexto_tipos:
+                    errores.append(Error(tk.linea, tk.columna,
+                                         f"variable '{var_name}' no declarada antes de la asignación", 'lexico'))
+                j = i + 2
+                expr_tokens = []
+                while j < len(tokens) and tokens[j].valor != ';' and tokens[j].valor != '{' and tokens[j].valor != '}':
+                    expr_tokens.append(tokens[j])
+                    j += 1
+                inferred = self._validar_expresion_tipos(expr_tokens, errores)
+                if inferred and var_name in self.contexto_tipos:
+                    declared_type = self.contexto_tipos[var_name][0]
+                    if declared_type == 'entero' and inferred == 'flotante':
+                        errores.append(Error(tk.linea, tk.columna,
+                                             f"asignación inválida: variable 'entero' recibe expresión 'flotante'", 'lexico'))
+                    if declared_type == 'cadena' and inferred in ('entero','flotante'):
+                        errores.append(Error(tk.linea, tk.columna,
+                                             f"asignación inválida: variable 'cadena' recibe expresión numérica", 'lexico'))
+                i = j
+                continue
+            i += 1
+
+        # 4) Validar secuencias inválidas de operadores entre tokens
+        for idx in range(len(tokens)-1):
+            t1 = tokens[idx]
+            t2 = tokens[idx+1]
+            if t1.tipo == 'OPERADOR' and t2.tipo == 'OPERADOR':
+                if not (t1.valor == '!' and (t2.valor == '(' or t2.tipo in ('IDENTIFICADOR','LITERAL_ENTERO','LITERAL_FLOTANTE','LITERAL_CADENA'))):
+                    errores.append(Error(t2.linea, t2.columna,
+                                         f"secuencia inválida de operadores '{t1.valor}{t2.valor}'", 'lexico'))
 
         return tokens, errores
     
@@ -563,6 +844,7 @@ class AnalizadorSintactico:
             i += 1
         
         return errores
+
 
 # Interfaz gráfica
 class AnalizadorApp:
