@@ -1073,7 +1073,7 @@ class AnalizadorApp:
         
         # ERRORES LÉXICOS
         if self.errores_lexicos:
-            self.errores_text.insert(tk.END, "🔴 ERRORES LÉXICOS:\n\n", "titulo_lexico")
+            self.errores_text.insert(tk.END, "🔴  ERRORES LÉXICOS:\n\n", "titulo_lexico")
             
             for i, error in enumerate(self.errores_lexicos, 1):
                 # Error N:
